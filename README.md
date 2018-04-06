@@ -96,6 +96,9 @@ ________
 ###2.0.0
 1) Hapi 17.x.x support included. For those who are using 16.x.x try to use version 1.3.5
 
+###1.3.6
+1) Output format included
+
 ###1.3.5
 1) Fixed the bugs
   - Query and parameters validation error message was fixed

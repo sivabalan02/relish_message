@@ -1,17 +1,26 @@
 'use strict';
 
-const Hoek = require('hoek');
-const __ = require('lodash');
-const internals = {};
-let errorMessages = {},
-    errorObject = {};
+const Hoek         = require('hoek');
+const _            = require('lodash');
+
+const internals    = {};
+
+let errorMessages  = {},
+    errorObject    = {};
 
 internals.defaults = {
-    stripQuotes: true,
-    statusCode: 400,
-    message: "Validation failed",
-    messages: {},
-    data: {}
+    stripQuotes  : true,
+    statusCode   : 400,
+    message      : {
+        value: "Validation failed",
+        key  : message
+    },
+    error_key    : error,
+    output_format: {
+        message: '',
+        data   : {},
+        error  : {}
+    }
 };
 
 function isEmpty(obj) {
@@ -26,42 +35,78 @@ const Relish_message = function Relish_message(opts) {
     this.exports = {};
     this._opts = opts ? Hoek.applyToDefaults(internals.defaults, opts) : internals.defaults;
 
-    this.generateErrorMessage = (i18n, scenario, key, constraint, message) => {
-        if (errorMessages.messages[scenario][key]) {
-            if (typeof errorMessages.messages[scenario][key][constraint] === "object") {
-                if (errorMessages.messages[scenario][key][constraint].length === 2) {
-                    let errorMessage = i18n ? i18n.__(errorMessages.messages[scenario][key][constraint][0]) : errorMessages.messages[scenario][key][constraint][0];
-                    let temp = errorMessages.messages[scenario][key][constraint][1];
-
-                    for (let index in temp)
-                        errorMessage = errorMessage.replace('{' + index + '}', temp[index]);
-
-                    errorObject[key] = errorMessage;
-                }
-            }
-            else if (typeof errorMessages.messages[scenario][key][constraint] === "string") {
-                errorObject[key] = i18n ? i18n.__(errorMessages.messages[scenario][key][constraint]) : errorMessages.messages[scenario][key][constraint];
-            }
-            else
-                errorObject[key] = errorMessages.stripQuotes ? message.replace(new RegExp('"', 'g'), '') : message;
-        }
-        else
-            errorObject[key] = errorMessages.stripQuotes ? message.replace(new RegExp('"', 'g'), '') : message;
-    }
-
     this.parseError = (error, i18n, scenario) => {
-
-        error.map((i) => {
+        errorMessages = __.cloneDeep(this._opts);
+        //errorMessages.message = i18n ? i18n.__(errorMessages.message) : errorMessages.message;
+        error.data.details.map((i) => {
             let err = {
-                path: i.context.key,
+                key: typeof i.path === "string" ? i.path.split('.').pop() : i.path.join(),
+                path: typeof i.path === "string" ? i.path : i.path.join(),
                 message: errorMessages.stripQuotes ? i.message.replace(/"/g, '') : i.message,
+                type: i.type.split('.').shift(),
                 constraint: i.type.split('.').pop()
             };
-            console.log(i);
 
             console.log(err);
+            // if label is different than key, provide label
+            if (i.context.key !== err.key) {
+                err.label = i.context.key;
+            }
 
-            this.generateErrorMessage(i18n, scenario, err.path, err.constraint, err.message);
+            // set custom message (if exists)
+            if (errorMessages.messages[scenario].hasOwnProperty(err.path)) {
+                if (typeof errorMessages.messages[scenario][err.path][err.constraint] === "object") {
+                    if (errorMessages.messages[scenario][err.path][err.constraint].length === 2) {
+                        let errorMessage = i18n ? i18n.__(errorMessages.messages[scenario][err.path][err.constraint][0]) : errorMessages.messages[scenario][err.path][err.constraint][0];
+                        let temp = errorMessages.messages[scenario][err.path][err.constraint][1];
+
+                        for (let index in temp)
+                            errorMessage = errorMessage.replace('{' + index + '}', temp[index]);
+
+                        errorObject[err.key] = errorMessage;
+                    }
+                } else {
+                    //let errorMessage = 
+                    errorObject[err.key] = i18n ? i18n.__(errorMessages.messages[scenario][err.path][err.constraint]) : errorMessages.messages[scenario][err.path][err.constraint];
+                }
+            }
+            else if (errorMessages.messages[scenario].hasOwnProperty(err.key)) {
+                if (typeof errorMessages.messages[scenario][err.key][err.constraint] === "object") {
+                    if (errorMessages.messages[scenario][err.key][err.constraint].length === 2) {
+                        let errorMessage = i18n ? i18n.__(errorMessages.messages[scenario][err.key][err.constraint][0]) : errorMessages.messages[scenario][err.key][err.constraint][0];
+                        let temp = errorMessages.messages[scenario][err.key][err.constraint][1];
+                        for (let index in temp)
+                            errorMessage = errorMessage.replace('{' + index + '}', temp[index]);
+
+                        errorObject[err.key] = errorMessage;
+                    }
+                }
+                else
+                    errorObject[err.key] = i18n ? i18n.__(errorMessages.messages[scenario][err.key][err.constraint]) : errorMessages.messages[scenario][err.key][err.constraint];
+            }
+            else if (["missing", "xor"].indexOf(err.constraint) !== -1) {
+                let matchKeys = err.message.match(/\[(.*)\]/);
+                if (matchKeys && matchKeys.length && matchKeys[1]) {
+                    let keys = matchKeys[1].split(",");
+                    keys.forEach((key, index) => {
+                        key = key.trim();
+                        if (errorMessages.messages[scenario].hasOwnProperty(key)) {
+                            if (typeof errorMessages.messages[scenario][key].required === "object") {
+                                if (errorMessages.messages[scenario][key].required.length === 2) {
+                                    let errorMessage = i18n ? i18n.__(errorMessages.messages[scenario][key]["required"][0]) : errorMessages.messages[scenario][key]["required"][0];
+                                    let temp = errorMessages.messages[scenario][key]["required"][1];
+                                    for (let index in temp)
+                                        errorMessage = errorMessage.replace('{' + index + '}', temp[index]);
+
+                                    errorObject[key] = errorMessage;
+                                }
+                            }
+                            else
+                                errorObject[key] = i18n ? i18n.__(errorMessages.messages[scenario][key].required) : errorMessages.messages[scenario][key].required;
+                        }
+                    });
+                }
+            }
         });
     };
 
@@ -71,39 +116,50 @@ const Relish_message = function Relish_message(opts) {
         return this.exports;
     };
 
-    this.exports.failAction = (request, h, error) => {
-        let i18n = request.i18n,
-            scenario = request.route.settings.app.scenario;
-
+    this.exports.failAction = (request, reply, source, error) => {
+        let i18n = request.i18n;
+        // parse error object
         errorObject = {};
+        this.parseError(error, i18n, request.route.settings.app.scenario);
+        let scenario = request.route.settings.app.scenario;
 
-        errorMessages = __.cloneDeep(this._opts);
-        errorMessages.message = i18n ? i18n.__(errorMessages.message) : errorMessages.message;
-        if (request.route.settings.validate.payload) {
-            if (!request.payload) {
-                let keys = request.route.settings.validate.payload._inner.children;
-                for (let index in keys)
-                    this.generateErrorMessage(i18n, scenario, keys[index].key, "required", "");
+        //error.output.payload.message                  = errorMessages.message;
+        error.output.payload = errorMessages.output_format;
+        console.log(error.output.payload);
+        console.log(errorMessages)
+        error.output.payload[errorMessages.message.key] = errorMessages.message.value;
+        error.output.payload[errorMessages.error_key] = errorObject;
+        if (!request.payload) {
+            var customErrors = {};
+            for (let index in errorMessages.messages[scenario]) {
+
+                if (errorMessages.messages[scenario][index].required) {
+                    if (typeof errorMessages.messages[scenario][index].required === "object") {
+                        if (errorMessages.messages[scenario][index].required.length === 2) {
+                            let errorMessage = i18n ? request.i18n.__(errorMessages.messages[scenario][index].required) : errorMessages.messages[scenario][index].required,
+                                temp = errorMessages.messages[scenario][index].required[0];
+
+                            for (let keyIndex in temp)
+                                errorMessage = errorMessage.replace('{' + keyIndex + '}', temp[keyIndex]);
+
+                            errorMessages.messages[scenario][index].required = errorMessage;
+                        }
+                    } else
+                        errorMessages.messages[scenario][index].required = i18n ? request.i18n.__(errorMessages.messages[scenario][index].required) : errorMessages.messages[scenario][index].required;
+
+                    customErrors[index] = errorMessages.messages[scenario][index].required;
+                }
             }
-            else {
-                this.parseError(error.details, i18n, scenario);
-                console.log("testt");
-            }
+
+            error.output.payload[errorMessages.error_key] = customErrors;
         }
 
-        if (isEmpty(errorObject) && (request.route.settings.validate.query || request.route.settings.validate.params))
-            this.parseError(error.details, i18n, scenario);
-
-        error.output.payload.message = errorMessages.message;
-        error.output.payload.data = errorMessages.data;
-        error.output.payload.errors = errorObject;
         error.output.statusCode = errorMessages.statusCode;
 
-        delete (error.output.payload.statusCode);
         delete (error.output.payload.validation);
-        delete (error.output.payload.error);
+        delete (error.output.payload.statusCode);
 
-        return error;
+        return reply(error);
     };
 
     return this.exports;
