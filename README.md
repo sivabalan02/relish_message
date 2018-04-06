@@ -50,9 +50,9 @@ const Relish = require('relish_message')({
     statusCode   : 400,
     message      : {
         value: "Validation failed",
-        key  : message
+        key  : 'message'
     },
-    error_key    : error,
+    error_key    : 'error',
     output_format: {
         message: '',
         data   : {},
@@ -169,7 +169,7 @@ Output:
 ```
 
 ## Change log
-________
+
 ###2.0.0
 1) Hapi 17.x.x support included. For those who are using 16.x.x try to use version 1.3.5
 

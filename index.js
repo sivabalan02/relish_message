@@ -13,7 +13,7 @@ internals.defaults = {
     statusCode   : 400,
     message      : {
         value: "Validation failed",
-        key  : message
+        key  : 'message'
     },
     error_key    : error,
     output_format: {
