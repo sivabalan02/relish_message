@@ -46,9 +46,18 @@ First load and initialize the module
 ```js
 // load the package and set custom message options
 const Relish = require('relish_message')({
-  statusCode : 400,
-  message    : 'VALIDATION_FAILED',
-  data       : {},
+  stripQuotes  : true,
+    statusCode   : 400,
+    message      : {
+        value: "Validation failed",
+        key  : message
+    },
+    error_key    : error,
+    output_format: {
+        message: '',
+        data   : {},
+        error  : {}
+    },
   messages   : {
     'signup': {
       'name'    : {
@@ -91,6 +100,74 @@ server.route({
   handler: (request, h) => return h.response('OK')
 });
 ```
+
+## Properties
+
+### stripQuotes
+ Used to remove quotes from error messages if it is true. (Default: true)
+
+### statusCode
+Http status code of the error. (Default: 400)
+
+### output_format
+Tells the response format of the error. Default format is
+```
+  output_format: {
+    message: '',
+    error: {}
+    data: {}
+  }
+```
+Here data property will be optional one. But message and error were mandatory. This output_format property used to customize the response data format
+
+### message
+Holds the response format message key name and value
+
+Example if the message property is defined as follows 
+```
+  message: {
+    key: 'messages',
+    value: 'Validation failed'
+  }
+  output_format: {
+    message: '',
+    error: {}
+    data: {}
+  }
+```
+
+then response will be like this
+```
+  {
+    messages: 'Validation failed',
+    error: {},
+    data: {}
+  }
+```
+### error_key
+Holds error key name
+Example
+```
+  error_key: "errors",
+  output_format: {
+    message: '',
+    error: {}
+    data: {}
+  }
+```
+
+Output: 
+```
+   {
+    message: '',
+    errors: {
+      "name": "name is not allowed to be empty",
+      "email": "email must be a valid email"
+    }
+    data: {}
+  }
+```
+
 ## Change log
 ________
 ###2.0.0
