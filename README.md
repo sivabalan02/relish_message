@@ -144,6 +144,7 @@ then response will be like this
     data: {}
   }
 ```
+
 ### error_key
 Holds error key name
 Example
@@ -155,6 +156,9 @@ Example
     data: {}
   }
 ```
+
+### messages
+Holds the error message for each field
 
 Output: 
 ```
@@ -170,17 +174,20 @@ Output:
 
 ## Change log
 
-###2.0.0
-1) Hapi 17.x.x support included. For those who are using 16.x.x try to use version 1.3.5
+### 2.0.1
+1) Minor issues fixed
 
-###1.3.10
+### 2.0.0
+1) Hapi 17.x.x support included. For those who are using 16.x.x try to use version 1.3.10
+
+### 1.3.10
 1) Output format included
 
-###1.3.5
+### 1.3.5
 1) Fixed the bugs
   - Query and parameters validation error message was fixed
 
-###1.3.4
+### 1.3.4
 1) Changed the response format 
 
 Old version:
