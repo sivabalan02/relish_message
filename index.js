@@ -1,7 +1,7 @@
 'use strict';
 
 const Hoek         = require('hoek');
-const _            = require('lodash');
+const __           = require('lodash');
 
 const internals    = {};
 
@@ -15,7 +15,7 @@ internals.defaults = {
         value: "Validation failed",
         key  : 'message'
     },
-    error_key    : error,
+    error_key    : 'error',
     output_format: {
         message: '',
         data   : {},
@@ -47,7 +47,6 @@ const Relish_message = function Relish_message(opts) {
                 constraint: i.type.split('.').pop()
             };
 
-            console.log(err);
             // if label is different than key, provide label
             if (i.context.key !== err.key) {
                 err.label = i.context.key;
@@ -125,8 +124,6 @@ const Relish_message = function Relish_message(opts) {
 
         //error.output.payload.message                  = errorMessages.message;
         error.output.payload = errorMessages.output_format;
-        console.log(error.output.payload);
-        console.log(errorMessages)
         error.output.payload[errorMessages.message.key] = errorMessages.message.value;
         error.output.payload[errorMessages.error_key] = errorObject;
         if (!request.payload) {
