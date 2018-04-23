@@ -122,7 +122,7 @@ const Relish_message = function Relish_message(opts) {
 
         error.output.payload                            = errorMessages.output_format;
         error.output.payload[errorMessages.message.key] = errorMessages.message.value;
-        error.output.payload[error_key]                 = errorObject;
+        error.output.payload[errorMessages.error_key]   = errorObject;
         error.output.statusCode                         = errorMessages.statusCode;
 
         delete (error.output.payload.statusCode);

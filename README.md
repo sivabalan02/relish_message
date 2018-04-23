@@ -174,7 +174,10 @@ Output:
 
 ## Change log
 
-### 2.0.1
+### 2.0.4
+1) Minor issues fixed
+
+### 2.0.3
 1) Minor issues fixed
 
 ### 2.0.0
